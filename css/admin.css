@@ -224,29 +224,40 @@ textarea { resize: vertical; min-height: 80px; }
 
 /* ===== Sidebar ===== */
 .admin-sidebar {
-    width: 220px;
+    width: 240px;
     background: var(--bg-2);
     border-right: 1px solid var(--border);
-    padding: 16px 0;
+    padding: 12px 0;
     flex-shrink: 0;
+    overflow-y: auto;
 }
 
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 0 8px;
+    gap: 4px;
+    padding: 0 10px;
 }
 
-.sidebar-link {
-    display: block;
+/* Tree group */
+.tree-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.tree-parent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
     text-align: left;
-    padding: 10px 16px;
+    padding: 9px 12px;
     border-radius: 8px;
-    font-size: 0.88rem;
-    font-weight: 500;
-    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-subtle);
     background: none;
     border: none;
     cursor: pointer;
@@ -254,12 +265,85 @@ textarea { resize: vertical; min-height: 80px; }
     transition: all 0.15s;
 }
 
-.sidebar-link:hover { color: var(--text); background: var(--bg-3); }
+.tree-parent:hover {
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.02);
+}
+
+.tree-icon {
+    flex-shrink: 0;
+    opacity: 0.5;
+}
+
+.tree-parent span {
+    flex: 1;
+}
+
+.tree-arrow {
+    flex-shrink: 0;
+    opacity: 0.4;
+    transition: transform 0.25s ease;
+    transform: rotate(-90deg);
+}
+
+.tree-group.open > .tree-parent .tree-arrow {
+    transform: rotate(0deg);
+}
+
+.tree-children {
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    padding: 2px 0 6px 0;
+}
+
+.tree-group.open > .tree-children {
+    display: flex;
+}
+
+/* Sidebar links inside tree */
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px 8px 20px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+    position: relative;
+}
+
+.sidebar-link svg {
+    flex-shrink: 0;
+    opacity: 0.5;
+}
+
+.sidebar-link:hover {
+    color: var(--text);
+    background: var(--bg-3);
+}
+
+.sidebar-link:hover svg {
+    opacity: 0.8;
+}
 
 .sidebar-link.active {
     color: var(--text);
     background: var(--bg-3);
     box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.sidebar-link.active svg {
+    opacity: 1;
+    color: var(--primary-light);
 }
 
 /* ===== Content Area ===== */
@@ -357,7 +441,7 @@ textarea { resize: vertical; min-height: 80px; }
 .editor-actions {
     position: fixed;
     bottom: 0;
-    left: 220px;
+    left: 240px;
     right: 0;
     padding: 16px 40px;
     background: var(--bg-2);
@@ -429,14 +513,29 @@ textarea { resize: vertical; min-height: 80px; }
         flex-direction: row;
         overflow-x: auto;
         gap: 4px;
-        padding: 0 12px;
+        padding: 0 8px;
+    }
+
+    .tree-group {
+        display: contents;
+    }
+
+    .tree-parent {
+        display: none;
+    }
+
+    .tree-children {
+        display: contents !important;
     }
 
     .sidebar-link {
         white-space: nowrap;
-        padding: 8px 14px;
-        font-size: 0.82rem;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        gap: 5px;
     }
+
+    .sidebar-link svg { display: none; }
 
     .sidebar-link.active { box-shadow: none; }
 

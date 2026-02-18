@@ -391,6 +391,17 @@ function initSidebar() {
             document.querySelectorAll('.editor-section').forEach(s => s.classList.remove('active'));
             const section = document.getElementById('editor-' + link.dataset.section);
             if (section) section.classList.add('active');
+
+            const parentGroup = link.closest('.tree-group');
+            if (parentGroup && !parentGroup.classList.contains('open')) {
+                parentGroup.classList.add('open');
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-toggle="tree"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            btn.closest('.tree-group').classList.toggle('open');
         });
     });
 }
@@ -643,6 +654,18 @@ function initPostsManager() {
         closePostEditor();
         renderAdminPosts();
     });
+
+    const deleteAllBtn = document.getElementById('delete-all-posts-btn');
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', () => {
+            const posts = getPosts();
+            if (posts.length === 0) return;
+            if (!confirm(`Удалить все публикации (${posts.length} шт.) и все комментарии? Это необратимо.`)) return;
+            localStorage.removeItem(POSTS_KEY);
+            localStorage.removeItem(COMMENTS_KEY);
+            renderAdminPosts();
+        });
+    }
 
     initPostToolbar();
     renderAdminPosts();
