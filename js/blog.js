@@ -1,6 +1,46 @@
 const POSTS_KEY = 'sait_posts';
 const COMMENTS_KEY = 'sait_comments';
 const VISITOR_TOKEN_KEY = 'sait_visitor_token';
+const VIEWS_KEY = 'sait_post_views';
+const SITE_VISITS_KEY = 'sait_site_visits';
+const SESSION_KEY = 'sait_admin_session';
+
+function isAdmin() {
+    return sessionStorage.getItem(SESSION_KEY) === 'true';
+}
+
+function getPostViews() {
+    try { return JSON.parse(localStorage.getItem(VIEWS_KEY)) || {}; }
+    catch { return {}; }
+}
+
+function addPostView(postId) {
+    if (isAdmin()) return;
+    const viewed = JSON.parse(sessionStorage.getItem('sait_viewed_posts') || '[]');
+    if (viewed.includes(postId)) return;
+    viewed.push(postId);
+    sessionStorage.setItem('sait_viewed_posts', JSON.stringify(viewed));
+    const views = getPostViews();
+    views[postId] = (views[postId] || 0) + 1;
+    localStorage.setItem(VIEWS_KEY, JSON.stringify(views));
+}
+
+function getSiteVisits() {
+    return parseInt(localStorage.getItem(SITE_VISITS_KEY) || '0', 10);
+}
+
+function trackSiteVisit() {
+    if (isAdmin()) return;
+    if (sessionStorage.getItem('sait_visit_counted')) return;
+    sessionStorage.setItem('sait_visit_counted', '1');
+    const visits = getSiteVisits() + 1;
+    localStorage.setItem(SITE_VISITS_KEY, String(visits));
+}
+
+function extractFirstImage(html) {
+    const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    return match ? match[1] : null;
+}
 
 function getVisitorToken() {
     let token = localStorage.getItem(VISITOR_TOKEN_KEY);
@@ -53,6 +93,7 @@ function getCurrentPostId() {
 
 /* ===== Init ===== */
 document.addEventListener('DOMContentLoaded', () => {
+    trackSiteVisit();
     initMobileMenu();
     const postId = getCurrentPostId();
     if (postId) {
@@ -104,13 +145,18 @@ function showPostList() {
 
     const allComments = getAllComments();
 
+    const postViews = getPostViews();
+
     posts.forEach(post => {
         const commentCount = (allComments[post.id] || []).length;
+        const viewCount = postViews[post.id] || 0;
         const excerpt = stripHtml(post.content).slice(0, 180);
+        const thumbnail = extractFirstImage(post.content);
         const card = document.createElement('div');
         card.className = 'post-card';
         const tagsHtml = (post.tags || []).slice(0, 4).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
         card.innerHTML = `
+            ${thumbnail ? `<div class="post-card-thumb"><img src="${thumbnail}" alt="" loading="lazy"></div>` : ''}
             <div class="post-card-date">${formatDate(post.date)}</div>
             <h2>${escapeHtml(post.title)}</h2>
             <div class="post-card-excerpt">${excerpt}${excerpt.length >= 180 ? '...' : ''}</div>
@@ -119,6 +165,10 @@ function showPostList() {
                 <span class="post-card-comments">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     ${commentCount}
+                </span>
+                <span class="post-card-views">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    ${viewCount}
                 </span>
                 <span class="post-card-read">
                     Читать
@@ -131,6 +181,12 @@ function showPostList() {
         });
         grid.appendChild(card);
     });
+
+    const visitsBadge = document.getElementById('site-visits-badge');
+    if (visitsBadge) {
+        const visits = getSiteVisits();
+        visitsBadge.textContent = visits > 0 ? `Посещений сайта: ${visits}` : '';
+    }
 }
 
 /* ===== Single Post ===== */
@@ -146,6 +202,8 @@ function showPost(postId) {
     document.getElementById('blog-list').style.display = 'none';
     document.getElementById('post-view').style.display = '';
     document.title = `${post.title} — Заметки Бездаря`;
+
+    addPostView(postId);
 
     document.getElementById('post-meta').textContent = formatDate(post.date) + (post.updated ? ` (обновлено ${formatDate(post.updated)})` : '');
     document.getElementById('post-title').textContent = post.title;

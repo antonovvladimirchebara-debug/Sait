@@ -482,6 +482,22 @@ h1, h2, h3, h4 {
 }
 
 /* ===== About ===== */
+/* ===== Latest Posts ===== */
+.latest-posts {
+    padding: 100px 0;
+    position: relative;
+}
+
+.latest-posts::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-border-hover), transparent);
+}
+
 .about {
     padding: 120px 0;
 }

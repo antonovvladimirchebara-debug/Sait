@@ -676,6 +676,7 @@ function renderAdminPosts() {
 
     const posts = getPosts().sort((a, b) => new Date(b.date) - new Date(a.date));
     const allComments = getAllComments();
+    const postViews = (() => { try { return JSON.parse(localStorage.getItem('sait_post_views')) || {}; } catch { return {}; } })();
 
     if (posts.length === 0) {
         container.innerHTML = '<p style="color:var(--text-muted);padding:20px 0">Публикаций пока нет. Нажмите «Новая публикация», чтобы создать первую.</p>';
@@ -686,6 +687,7 @@ function renderAdminPosts() {
 
     posts.forEach(post => {
         const commentCount = (allComments[post.id] || []).length;
+        const viewCount = postViews[post.id] || 0;
         const excerpt = stripHtml(post.content).slice(0, 120);
         const card = document.createElement('div');
         card.className = 'admin-post-card';
@@ -696,7 +698,7 @@ function renderAdminPosts() {
                 <div class="admin-post-meta">
                     <span>${formatDate(post.date)}</span>
                     ${post.updated ? `<span> · обновлено ${formatDate(post.updated)}</span>` : ''}
-                    <span> · ${commentCount} комм.</span>
+                    <span> · 👁 ${viewCount} · 💬 ${commentCount}</span>
                 </div>
             </div>
             <div class="admin-post-actions">

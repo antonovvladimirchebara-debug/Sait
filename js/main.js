@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    trackSiteVisitMain();
     applyCustomContent();
     initHeader();
     initMobileMenu();
@@ -6,7 +7,80 @@ document.addEventListener('DOMContentLoaded', () => {
     initCounterAnimation();
     initActiveNavLink();
     initContactForm();
+    renderLatestPosts();
 });
+
+function trackSiteVisitMain() {
+    if (sessionStorage.getItem('sait_admin_session') === 'true') return;
+    if (sessionStorage.getItem('sait_visit_counted')) return;
+    sessionStorage.setItem('sait_visit_counted', '1');
+    const key = 'sait_site_visits';
+    const visits = parseInt(localStorage.getItem(key) || '0', 10) + 1;
+    localStorage.setItem(key, String(visits));
+}
+
+function renderLatestPosts() {
+    const grid = document.getElementById('latest-posts-grid');
+    if (!grid) return;
+
+    let posts;
+    try { posts = JSON.parse(localStorage.getItem('sait_posts')) || []; }
+    catch { posts = []; }
+
+    if (posts.length === 0) {
+        grid.closest('.latest-posts').style.display = 'none';
+        return;
+    }
+
+    const latest = posts.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+    const views = (() => { try { return JSON.parse(localStorage.getItem('sait_post_views')) || {}; } catch { return {}; } })();
+    const comments = (() => { try { return JSON.parse(localStorage.getItem('sait_comments')) || {}; } catch { return {}; } })();
+
+    grid.innerHTML = '';
+
+    latest.forEach(post => {
+        const excerpt = post.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150);
+        const imgMatch = post.content.match(/<img[^>]+src=["']([^"']+)["']/i);
+        const thumb = imgMatch ? imgMatch[1] : null;
+        const commentCount = (comments[post.id] || []).length;
+        const viewCount = views[post.id] || 0;
+
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        card.setAttribute('data-animate', '');
+        card.innerHTML = `
+            ${thumb ? `<div class="post-card-thumb"><img src="${thumb}" alt="" loading="lazy"></div>` : ''}
+            <div class="post-card-date">${formatDateShort(post.date)}</div>
+            <h2>${escapeHtmlSimple(post.title)}</h2>
+            <div class="post-card-excerpt">${excerpt}${excerpt.length >= 150 ? '...' : ''}</div>
+            <div class="post-card-footer">
+                <span class="post-card-comments">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    ${commentCount}
+                </span>
+                <span class="post-card-views">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    ${viewCount}
+                </span>
+                <span class="post-card-read">Читать</span>
+            </div>
+        `;
+        card.addEventListener('click', () => { window.location.href = `blog.html?post=${post.id}`; });
+        grid.appendChild(card);
+    });
+}
+
+function formatDateShort(iso) {
+    const d = new Date(iso);
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function escapeHtmlSimple(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
 
 function applyCustomContent() {
     let content;
