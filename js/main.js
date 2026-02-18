@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    applyCustomContent();
     initHeader();
     initMobileMenu();
     initScrollAnimations();
@@ -6,6 +7,112 @@ document.addEventListener('DOMContentLoaded', () => {
     initActiveNavLink();
     initContactForm();
 });
+
+function applyCustomContent() {
+    let content;
+    try {
+        const raw = localStorage.getItem('sait_content');
+        if (!raw) return;
+        content = JSON.parse(raw);
+    } catch (e) { return; }
+
+    const $ = (sel) => document.querySelector(sel);
+    const setText = (sel, val) => { const el = $(sel); if (el && val) el.textContent = val; };
+    const setHTML = (sel, val) => { const el = $(sel); if (el && val) el.innerHTML = val; };
+
+    if (content.hero) {
+        const h = content.hero;
+        setText('.hero-badge', h.badge);
+        if (h.title || h.highlight) {
+            const titleEl = $('.hero-title');
+            if (titleEl) {
+                const word = h.highlight || 'цифровое';
+                const full = (h.title || 'Создаём {highlight} будущее вместе')
+                    .replace('{highlight}', `<span class="gradient-text">${word}</span>`)
+                    .replace(word, `<span class="gradient-text">${word}</span>`);
+                titleEl.innerHTML = full;
+            }
+        }
+        setText('.hero-description', h.description);
+        if (h.btn1) setText('.hero-actions .btn-primary', h.btn1);
+        if (h.btn2) setText('.hero-actions .btn-secondary', h.btn2);
+    }
+
+    if (content.features) {
+        const f = content.features;
+        const header = document.querySelector('#features .section-header');
+        if (header) {
+            setText('#features .section-title', f.title);
+            setText('#features .section-description', f.description);
+        }
+        if (f.items) {
+            const cards = document.querySelectorAll('.feature-card');
+            f.items.forEach((item, i) => {
+                if (cards[i]) {
+                    const h3 = cards[i].querySelector('h3');
+                    const p = cards[i].querySelector('p');
+                    if (h3 && item.title) h3.textContent = item.title;
+                    if (p && item.text) p.textContent = item.text;
+                }
+            });
+        }
+    }
+
+    if (content.about) {
+        const a = content.about;
+        setText('#about .section-title', a.title);
+        const paragraphs = document.querySelectorAll('.about-content > p');
+        if (paragraphs[0] && a.text1) paragraphs[0].textContent = a.text1;
+        if (paragraphs[1] && a.text2) paragraphs[1].textContent = a.text2;
+
+        const floats = document.querySelectorAll('.about-float-card');
+        if (floats[0]) {
+            setText('.about-float-1 .float-number', a.card1_number);
+            setText('.about-float-1 .float-label', a.card1_label);
+        }
+        if (floats[1]) {
+            setText('.about-float-2 .float-number', a.card2_number);
+            setText('.about-float-2 .float-label', a.card2_label);
+        }
+
+        const highlights = document.querySelectorAll('.highlight span');
+        if (highlights[0] && a.highlight1) highlights[0].textContent = a.highlight1;
+        if (highlights[1] && a.highlight2) highlights[1].textContent = a.highlight2;
+        if (highlights[2] && a.highlight3) highlights[2].textContent = a.highlight3;
+    }
+
+    if (content.stats) {
+        const s = content.stats;
+        const items = document.querySelectorAll('.stat-item');
+        const fields = [
+            { num: s.num1, suf: s.suf1, label: s.label1 },
+            { num: s.num2, suf: s.suf2, label: s.label2 },
+            { num: s.num3, suf: s.suf3, label: s.label3 },
+            { num: s.num4, suf: s.suf4, label: s.label4 }
+        ];
+        fields.forEach((f, i) => {
+            if (!items[i]) return;
+            const numEl = items[i].querySelector('.stat-number');
+            const sufEl = items[i].querySelector('.stat-suffix');
+            const labEl = items[i].querySelector('.stat-label');
+            if (numEl && f.num !== undefined) numEl.dataset.target = f.num;
+            if (sufEl && f.suf) sufEl.textContent = f.suf;
+            if (labEl && f.label) labEl.textContent = f.label;
+        });
+    }
+
+    if (content.contact) {
+        const c = content.contact;
+        setText('#contact .section-title', c.title);
+        const desc = document.querySelector('.contact-info > p');
+        if (desc && c.description) desc.textContent = c.description;
+
+        const details = document.querySelectorAll('.contact-detail .detail-value');
+        if (details[0] && c.email) details[0].textContent = c.email;
+        if (details[1] && c.phone) details[1].textContent = c.phone;
+        if (details[2] && c.address) details[2].textContent = c.address;
+    }
+}
 
 function initHeader() {
     const header = document.getElementById('header');

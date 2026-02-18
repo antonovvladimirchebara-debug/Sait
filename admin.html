@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель — Sait</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="login-screen" id="login-screen">
+        <div class="login-card">
+            <div class="login-logo">Sait<span>.</span></div>
+            <h2>Вход в админ-панель</h2>
+            <p class="login-hint">Пароль по умолчанию: <code>admin</code></p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" placeholder="Введите пароль" autofocus>
+                </div>
+                <div class="login-error" id="login-error">Неверный пароль</div>
+                <button type="submit" class="btn btn-primary">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="admin-panel" id="admin-panel" style="display:none">
+        <header class="admin-header">
+            <div class="admin-header-left">
+                <div class="admin-logo">Sait<span>.</span> <small>Админ</small></div>
+            </div>
+            <div class="admin-header-right">
+                <a href="index.html" class="btn btn-ghost" target="_blank">Открыть сайт</a>
+                <button class="btn btn-ghost" id="change-password-btn">Сменить пароль</button>
+                <button class="btn btn-ghost" id="logout-btn">Выйти</button>
+            </div>
+        </header>
+
+        <div class="admin-body">
+            <aside class="admin-sidebar">
+                <nav class="sidebar-nav">
+                    <button class="sidebar-link active" data-section="hero">Главный экран</button>
+                    <button class="sidebar-link" data-section="features">Возможности</button>
+                    <button class="sidebar-link" data-section="about">О нас</button>
+                    <button class="sidebar-link" data-section="stats">Цифры</button>
+                    <button class="sidebar-link" data-section="contact">Контакты</button>
+                    <button class="sidebar-link" data-section="settings">Настройки</button>
+                </nav>
+            </aside>
+
+            <main class="admin-content">
+                <!-- Hero -->
+                <div class="editor-section active" id="editor-hero">
+                    <h2>Главный экран (Hero)</h2>
+                    <div class="form-group">
+                        <label>Бейдж (маленький текст сверху)</label>
+                        <input type="text" data-field="hero.badge" placeholder="Добро пожаловать">
+                    </div>
+                    <div class="form-group">
+                        <label>Заголовок</label>
+                        <input type="text" data-field="hero.title" placeholder="Создаём цифровое будущее вместе">
+                    </div>
+                    <div class="form-group">
+                        <label>Выделенное слово в заголовке (градиент)</label>
+                        <input type="text" data-field="hero.highlight" placeholder="цифровое">
+                    </div>
+                    <div class="form-group">
+                        <label>Описание</label>
+                        <textarea data-field="hero.description" rows="3" placeholder="Мы помогаем бизнесу расти..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Текст кнопки 1</label>
+                        <input type="text" data-field="hero.btn1" placeholder="Начать проект">
+                    </div>
+                    <div class="form-group">
+                        <label>Текст кнопки 2</label>
+                        <input type="text" data-field="hero.btn2" placeholder="Узнать больше">
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="editor-section" id="editor-features">
+                    <h2>Возможности</h2>
+                    <div class="form-group">
+                        <label>Заголовок секции</label>
+                        <input type="text" data-field="features.title" placeholder="Что мы предлагаем">
+                    </div>
+                    <div class="form-group">
+                        <label>Описание секции</label>
+                        <input type="text" data-field="features.description" placeholder="Комплексные решения для вашего бизнеса">
+                    </div>
+                    <div class="features-editor" id="features-list"></div>
+                </div>
+
+                <!-- About -->
+                <div class="editor-section" id="editor-about">
+                    <h2>О нас</h2>
+                    <div class="form-group">
+                        <label>Заголовок</label>
+                        <input type="text" data-field="about.title" placeholder="Мы создаём продукты, которыми гордимся">
+                    </div>
+                    <div class="form-group">
+                        <label>Текст (абзац 1)</label>
+                        <textarea data-field="about.text1" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Текст (абзац 2)</label>
+                        <textarea data-field="about.text2" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Карточка 1 — число</label>
+                        <input type="text" data-field="about.card1_number" placeholder="10+">
+                    </div>
+                    <div class="form-group">
+                        <label>Карточка 1 — подпись</label>
+                        <input type="text" data-field="about.card1_label" placeholder="лет опыта">
+                    </div>
+                    <div class="form-group">
+                        <label>Карточка 2 — число</label>
+                        <input type="text" data-field="about.card2_number" placeholder="500+">
+                    </div>
+                    <div class="form-group">
+                        <label>Карточка 2 — подпись</label>
+                        <input type="text" data-field="about.card2_label" placeholder="проектов">
+                    </div>
+                    <div class="form-group">
+                        <label>Преимущество 1</label>
+                        <input type="text" data-field="about.highlight1" placeholder="Индивидуальный подход">
+                    </div>
+                    <div class="form-group">
+                        <label>Преимущество 2</label>
+                        <input type="text" data-field="about.highlight2" placeholder="Современные технологии">
+                    </div>
+                    <div class="form-group">
+                        <label>Преимущество 3</label>
+                        <input type="text" data-field="about.highlight3" placeholder="Поддержка 24/7">
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="editor-section" id="editor-stats">
+                    <h2>Цифры</h2>
+                    <div class="stats-editor">
+                        <div class="stat-edit-row">
+                            <div class="form-group"><label>Число 1</label><input type="number" data-field="stats.num1" placeholder="500"></div>
+                            <div class="form-group"><label>Суффикс</label><input type="text" data-field="stats.suf1" placeholder="+"></div>
+                            <div class="form-group"><label>Подпись</label><input type="text" data-field="stats.label1" placeholder="Проектов завершено"></div>
+                        </div>
+                        <div class="stat-edit-row">
+                            <div class="form-group"><label>Число 2</label><input type="number" data-field="stats.num2" placeholder="50"></div>
+                            <div class="form-group"><label>Суффикс</label><input type="text" data-field="stats.suf2" placeholder="+"></div>
+                            <div class="form-group"><label>Подпись</label><input type="text" data-field="stats.label2" placeholder="Специалистов в команде"></div>
+                        </div>
+                        <div class="stat-edit-row">
+                            <div class="form-group"><label>Число 3</label><input type="number" data-field="stats.num3" placeholder="99"></div>
+                            <div class="form-group"><label>Суффикс</label><input type="text" data-field="stats.suf3" placeholder="%"></div>
+                            <div class="form-group"><label>Подпись</label><input type="text" data-field="stats.label3" placeholder="Довольных клиентов"></div>
+                        </div>
+                        <div class="stat-edit-row">
+                            <div class="form-group"><label>Число 4</label><input type="number" data-field="stats.num4" placeholder="10"></div>
+                            <div class="form-group"><label>Суффикс</label><input type="text" data-field="stats.suf4" placeholder="+"></div>
+                            <div class="form-group"><label>Подпись</label><input type="text" data-field="stats.label4" placeholder="Лет на рынке"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact -->
+                <div class="editor-section" id="editor-contact">
+                    <h2>Контакты</h2>
+                    <div class="form-group">
+                        <label>Заголовок</label>
+                        <input type="text" data-field="contact.title" placeholder="Давайте обсудим ваш проект">
+                    </div>
+                    <div class="form-group">
+                        <label>Описание</label>
+                        <textarea data-field="contact.description" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" data-field="contact.email" placeholder="hello@sait.dev">
+                    </div>
+                    <div class="form-group">
+                        <label>Телефон</label>
+                        <input type="text" data-field="contact.phone" placeholder="+7 (999) 123-45-67">
+                    </div>
+                    <div class="form-group">
+                        <label>Адрес</label>
+                        <input type="text" data-field="contact.address" placeholder="Москва, Россия">
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="editor-section" id="editor-settings">
+                    <h2>Настройки</h2>
+                    <div class="settings-card">
+                        <h3>Сменить пароль</h3>
+                        <div class="form-group">
+                            <label>Текущий пароль</label>
+                            <input type="password" id="settings-current-pw">
+                        </div>
+                        <div class="form-group">
+                            <label>Новый пароль</label>
+                            <input type="password" id="settings-new-pw">
+                        </div>
+                        <div class="form-group">
+                            <label>Повторите новый пароль</label>
+                            <input type="password" id="settings-confirm-pw">
+                        </div>
+                        <button class="btn btn-primary" id="save-password-btn">Сохранить пароль</button>
+                        <div class="settings-msg" id="pw-msg"></div>
+                    </div>
+                    <div class="settings-card danger">
+                        <h3>Сброс контента</h3>
+                        <p>Удалить все изменения и вернуть контент к значениям по умолчанию.</p>
+                        <button class="btn btn-danger" id="reset-content-btn">Сбросить всё</button>
+                    </div>
+                </div>
+
+                <div class="editor-actions">
+                    <button class="btn btn-primary" id="save-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Сохранить изменения
+                    </button>
+                    <span class="save-status" id="save-status"></span>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="password-modal" style="display:none">
+        <div class="modal-card">
+            <h3>Сменить пароль</h3>
+            <div class="form-group">
+                <label>Текущий пароль</label>
+                <input type="password" id="modal-current-pw">
+            </div>
+            <div class="form-group">
+                <label>Новый пароль</label>
+                <input type="password" id="modal-new-pw">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="modal-cancel">Отмена</button>
+                <button class="btn btn-primary" id="modal-save-pw">Сохранить</button>
+            </div>
+            <div class="settings-msg" id="modal-pw-msg"></div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
