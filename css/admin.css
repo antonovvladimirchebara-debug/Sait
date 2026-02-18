@@ -714,6 +714,30 @@ textarea { resize: vertical; min-height: 80px; }
     margin: 4px 6px;
 }
 
+.admin-post-editor .rich-editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 12px 0;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.admin-post-editor .rich-editor img:hover {
+    opacity: 0.85;
+}
+
+.admin-post-editor .rich-editor.drag-over {
+    border-color: #a855f7;
+    box-shadow: 0 0 0 3px rgba(168,85,247,0.2);
+    background: rgba(168,85,247,0.03);
+}
+
+#insert-image-btn,
+#insert-image-url-btn {
+    font-size: 0.82rem !important;
+}
+
 @media (max-width: 768px) {
     .admin-post-card {
         flex-direction: column;

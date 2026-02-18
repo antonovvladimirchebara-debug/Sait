@@ -750,6 +750,92 @@ function initPostToolbar() {
             }
         });
     });
+
+    initImageUpload(editor);
+}
+
+/* ===== Image Upload ===== */
+function initImageUpload(editor) {
+    const fileInput = document.getElementById('image-file-input');
+    const insertBtn = document.getElementById('insert-image-btn');
+    const urlBtn = document.getElementById('insert-image-url-btn');
+
+    if (!fileInput || !insertBtn || !editor) return;
+
+    insertBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            Array.from(fileInput.files).forEach(file => insertImageFile(file, editor));
+            fileInput.value = '';
+        }
+    });
+
+    if (urlBtn) {
+        urlBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = prompt('Введите URL изображения:', 'https://');
+            if (url) {
+                editor.focus();
+                const img = `<img src="${url}" alt="" style="max-width:100%;border-radius:8px;margin:12px 0">`;
+                document.execCommand('insertHTML', false, img);
+            }
+        });
+    }
+
+    editor.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        editor.classList.add('drag-over');
+    });
+
+    editor.addEventListener('dragleave', () => {
+        editor.classList.remove('drag-over');
+    });
+
+    editor.addEventListener('drop', (e) => {
+        e.preventDefault();
+        editor.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length) {
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) insertImageFile(file, editor);
+            });
+        }
+    });
+
+    editor.addEventListener('paste', (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                insertImageFile(item.getAsFile(), editor);
+                return;
+            }
+        }
+    });
+}
+
+function insertImageFile(file, editor) {
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        alert(`Файл "${file.name}" слишком большой (${(file.size/1024/1024).toFixed(1)} МБ). Максимум 5 МБ.`);
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        editor.focus();
+        const isGif = file.type === 'image/gif';
+        const img = `<img src="${e.target.result}" alt="${file.name}" style="max-width:100%;border-radius:8px;margin:12px 0" ${isGif ? '' : 'loading="lazy"'}>`;
+        document.execCommand('insertHTML', false, img);
+    };
+    reader.readAsDataURL(file);
 }
 
 /* =========================================================
