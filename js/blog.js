@@ -86,7 +86,7 @@ function initMobileMenu() {
 function showPostList() {
     document.getElementById('blog-list').style.display = '';
     document.getElementById('post-view').style.display = 'none';
-    document.title = 'Блог — Sait';
+    document.title = 'Блог — Заметки Бездаря';
 
     const posts = getPosts().sort((a, b) => new Date(b.date) - new Date(a.date));
     const grid = document.getElementById('posts-grid');
@@ -109,10 +109,12 @@ function showPostList() {
         const excerpt = stripHtml(post.content).slice(0, 180);
         const card = document.createElement('div');
         card.className = 'post-card';
+        const tagsHtml = (post.tags || []).slice(0, 4).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
         card.innerHTML = `
             <div class="post-card-date">${formatDate(post.date)}</div>
             <h2>${escapeHtml(post.title)}</h2>
             <div class="post-card-excerpt">${excerpt}${excerpt.length >= 180 ? '...' : ''}</div>
+            ${tagsHtml ? `<div class="post-card-tags">${tagsHtml}</div>` : ''}
             <div class="post-card-footer">
                 <span class="post-card-comments">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -143,15 +145,71 @@ function showPost(postId) {
 
     document.getElementById('blog-list').style.display = 'none';
     document.getElementById('post-view').style.display = '';
-    document.title = `${post.title} — Sait`;
+    document.title = `${post.title} — Заметки Бездаря`;
 
     document.getElementById('post-meta').textContent = formatDate(post.date) + (post.updated ? ` (обновлено ${formatDate(post.updated)})` : '');
     document.getElementById('post-title').textContent = post.title;
     document.getElementById('post-body').innerHTML = post.content;
 
+    const tagsContainer = document.getElementById('post-tags');
+    if (tagsContainer && post.tags && post.tags.length) {
+        tagsContainer.innerHTML = post.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+    } else if (tagsContainer) {
+        tagsContainer.innerHTML = '';
+    }
+
+    injectPostSEO(post);
+
     initCommentToolbar(document.querySelector('#comment-form-wrapper .comment-toolbar'), document.getElementById('comment-editor'));
     initSubmitComment(postId);
     renderComments(postId);
+}
+
+function injectPostSEO(post) {
+    const desc = post.seo?.description || stripHtml(post.content).slice(0, 160);
+    const keywords = post.seo?.keywords || (post.tags || []).map(t => t.replace('#', '')).join(', ');
+    const url = `https://antonovvladimirchebara-debug.github.io/Sait/blog.html?post=${post.id}`;
+
+    setMeta('description', desc);
+    setMeta('keywords', keywords);
+    setMetaProperty('og:title', `${post.title} — Заметки Бездаря`);
+    setMetaProperty('og:description', desc);
+    setMetaProperty('og:url', url);
+    setMetaProperty('og:type', 'article');
+
+    let ld = document.getElementById('post-jsonld');
+    if (!ld) {
+        ld = document.createElement('script');
+        ld.type = 'application/ld+json';
+        ld.id = 'post-jsonld';
+        document.head.appendChild(ld);
+    }
+    ld.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        'headline': post.title,
+        'description': desc,
+        'datePublished': post.date,
+        'dateModified': post.updated || post.date,
+        'keywords': keywords,
+        'url': url,
+        'publisher': {
+            '@type': 'Person',
+            'name': 'Заметки Бездаря'
+        }
+    });
+}
+
+function setMeta(name, content) {
+    let el = document.querySelector(`meta[name="${name}"]`);
+    if (!el) { el = document.createElement('meta'); el.name = name; document.head.appendChild(el); }
+    el.content = content;
+}
+
+function setMetaProperty(prop, content) {
+    let el = document.querySelector(`meta[property="${prop}"]`);
+    if (!el) { el = document.createElement('meta'); el.setAttribute('property', prop); document.head.appendChild(el); }
+    el.content = content;
 }
 
 /* ===== Comments ===== */

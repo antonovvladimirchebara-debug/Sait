@@ -1,39 +1,27 @@
-# Sait
+# Заметки Бездаря
 
-Современный одностраничный веб-сайт с адаптивным дизайном.
-
-## Структура проекта
-
-```
-├── index.html       # Главная страница
-├── css/
-│   └── style.css    # Стили (темная тема, адаптивность, анимации)
-├── js/
-│   └── main.js      # Интерактивность (меню, анимации, форма)
-└── README.md
-```
-
-## Особенности
-
-- Тёмная тема с градиентами и плавными анимациями
-- Полностью адаптивный дизайн (мобильные, планшеты, десктоп)
-- Плавная прокрутка и анимации при скролле (Intersection Observer)
-- Анимация счётчиков в блоке статистики
-- Мобильное меню с анимацией
-- Контактная форма
-- SVG-иконки без внешних зависимостей
-- Google Fonts (Inter)
+мой странный строк
 
 ## Демо
 
-Сайт доступен онлайн: [https://antonovvladimirchebara-debug.github.io/Sait/](https://antonovvladimirchebara-debug.github.io/Sait/)
+Сайт: [https://antonovvladimirchebara-debug.github.io/Sait/](https://antonovvladimirchebara-debug.github.io/Sait/)
 
-## Запуск локально
+Блог: [https://antonovvladimirchebara-debug.github.io/Sait/blog.html](https://antonovvladimirchebara-debug.github.io/Sait/blog.html)
 
-Откройте `index.html` в браузере — дополнительные зависимости не требуются.
+## Структура
 
-Для локальной разработки с live-reload:
-
-```bash
-npx serve .
+```
+├── index.html          # Главная страница
+├── blog.html           # Блог с публикациями и комментариями
+├── admin.html          # Админ-панель (защита от перебора)
+├── css/
+│   ├── style.css       # Основные стили
+│   ├── blog.css        # Стили блога
+│   └── admin.css       # Стили админки
+├── js/
+│   ├── main.js         # Главная страница
+│   ├── blog.js         # Блог + комментарии + SEO
+│   └── admin.js        # Админка + ИИ-ассистент
+├── robots.txt          # Для поисковых роботов
+└── sitemap.xml         # Карта сайта
 ```

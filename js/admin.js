@@ -10,12 +10,12 @@ const DEFAULT_PW_HASH = '41b472af8ea6180a35e4c2eda03587b54c927658e0b2d5207e3d140
 
 const DEFAULT_CONTENT = {
     hero: {
-        badge: 'Добро пожаловать',
-        title: 'Создаём {highlight} будущее вместе',
-        highlight: 'цифровое',
-        description: 'Мы помогаем бизнесу расти с помощью современных технологий, инновационного дизайна и надёжных решений.',
-        btn1: 'Начать проект',
-        btn2: 'Узнать больше'
+        badge: 'мой странный строк',
+        title: 'Заметки {highlight}',
+        highlight: 'Бездаря',
+        description: 'Место, где собираются мысли, идеи и заметки. Без фильтров и без претензий на гениальность.',
+        btn1: 'Читать блог',
+        btn2: 'Обо мне'
     },
     features: {
         title: 'Что мы предлагаем',
@@ -591,7 +591,7 @@ function initPostsManager() {
     backBtn.addEventListener('click', closePostEditor);
     cancelBtn.addEventListener('click', closePostEditor);
 
-    saveBtn.addEventListener('click', () => {
+    saveBtn.addEventListener('click', async () => {
         const title = document.getElementById('post-title-input').value.trim();
         const content = document.getElementById('post-content-editor').innerHTML.trim();
 
@@ -608,6 +608,12 @@ function initPostsManager() {
             return;
         }
 
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Сохранение...';
+
+        const tags = await generateTags(title, content);
+        const seo = generateSEOMeta(title, content, tags);
+
         const posts = getPosts();
 
         if (editingPostId) {
@@ -615,6 +621,8 @@ function initPostsManager() {
             if (idx !== -1) {
                 posts[idx].title = title;
                 posts[idx].content = content;
+                posts[idx].tags = tags;
+                posts[idx].seo = seo;
                 posts[idx].updated = new Date().toISOString();
             }
         } else {
@@ -622,12 +630,16 @@ function initPostsManager() {
                 id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
                 title,
                 content,
+                tags,
+                seo,
                 date: new Date().toISOString(),
                 updated: null
             });
         }
 
         savePosts(posts);
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Опубликовать';
         closePostEditor();
         renderAdminPosts();
     });
@@ -743,6 +755,54 @@ function initPostToolbar() {
             }
         });
     });
+}
+
+/* =========================================================
+   AUTO HASHTAGS & SEO
+   ========================================================= */
+
+const STOP_WORDS = new Set(['и','в','на','с','по','для','что','это','как','не','но','от','за','к','из','до','о','а','то','все','так','его','она','они','мы','вы','он','её','их','бы','же','ли','уже','ещё','был','быть','были','будет','может','нет','да','при','или','ни','во','об','под','над','между','через','после','перед','также','тоже','только','очень','более','менее','этот','эта','эти','тот','такой','такая','такие','свой','своя','свои','который','которая','которые','один','одна','одно','весь','вся','всё','каждый','другой','другая','другие','какой','какая','какие','где','когда','если','чтобы','потому','поэтому','хотя','можно','нужно','надо','есть','быть','иметь']);
+
+function extractKeywords(title, htmlContent) {
+    const text = (title + ' ' + htmlContent.replace(/<[^>]*>/g, ' ')).toLowerCase();
+    const words = text.match(/[а-яёa-z]{4,}/g) || [];
+    const freq = {};
+
+    for (const w of words) {
+        if (STOP_WORDS.has(w)) continue;
+        freq[w] = (freq[w] || 0) + 1;
+    }
+
+    return Object.entries(freq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([word]) => word);
+}
+
+async function generateTags(title, content) {
+    const keywords = extractKeywords(title, content);
+    const localTags = keywords.slice(0, 5).map(w => '#' + w);
+
+    if (isAIConfigured()) {
+        try {
+            const prompt = `Придумай 5-7 хештегов для статьи с заголовком "${title}". Хештеги должны быть на русском, короткие, релевантные, популярные для поиска. Формат: #тег1 #тег2 #тег3. Верни ТОЛЬКО хештеги через пробел, ничего больше.`;
+            const result = await callAI(prompt, null);
+            if (result) {
+                const aiTags = result.match(/#[а-яёa-z0-9_]+/gi);
+                if (aiTags && aiTags.length >= 3) return aiTags.slice(0, 7);
+            }
+        } catch { /* fallback to local */ }
+    }
+
+    return localTags;
+}
+
+function generateSEOMeta(title, content, tags) {
+    const plainText = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const description = plainText.slice(0, 160) + (plainText.length > 160 ? '...' : '');
+    const keywords = tags.map(t => t.replace('#', '')).join(', ');
+
+    return { description, keywords };
 }
 
 /* =========================================================
@@ -1020,12 +1080,16 @@ function initAIGeneratePost() {
         if (!content) return;
 
         const title = titleRaw ? titleRaw.replace(/<[^>]*>/g, '').trim() : topic;
+        const tags = await generateTags(title, content);
+        const seo = generateSEOMeta(title, content, tags);
 
         const posts = getPosts();
         posts.push({
             id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
             title,
             content,
+            tags,
+            seo,
             date: new Date().toISOString(),
             updated: null
         });
@@ -1110,10 +1174,14 @@ function initAIAutoPost() {
             const content = await callAI(articlePrompt, null);
 
             if (content) {
+                const postTags = await generateTags(topic, content);
+                const postSeo = generateSEOMeta(topic, content, postTags);
                 posts.push({
                     id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
                     title: topic,
                     content,
+                    tags: postTags,
+                    seo: postSeo,
                     date: new Date(Date.now() - (topics.length - i) * 60000).toISOString(),
                     updated: null
                 });
