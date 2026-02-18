@@ -59,10 +59,20 @@
 
                     <!-- Posts list -->
                     <div id="posts-manager">
-                        <button class="btn btn-primary" id="new-post-btn" style="width:auto;margin-bottom:24px">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Новая публикация
-                        </button>
+                        <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+                            <button class="btn btn-primary" id="new-post-btn" style="width:auto">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Новая публикация
+                            </button>
+                            <button class="btn btn-ai" id="ai-generate-post-btn" style="width:auto">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L12 22"/><path d="M8 6a4 4 0 0 1 8 0"/><path d="M17 12.5c1.67.97 3 2.75 3 5.5H4c0-2.75 1.33-4.53 3-5.5"/></svg>
+                                ИИ: Сгенерировать пост
+                            </button>
+                            <button class="btn btn-ai" id="ai-autopost-btn" style="width:auto">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                ИИ: Авто-постинг
+                            </button>
+                        </div>
                         <div id="admin-posts-list"></div>
                     </div>
 
@@ -99,6 +109,26 @@
                             </div>
                             <div class="rich-editor" id="post-content-editor" contenteditable="true" data-placeholder="Начните писать публикацию..."></div>
                         </div>
+
+                        <!-- AI Assistant Panel -->
+                        <div class="ai-panel" id="ai-panel">
+                            <div class="ai-panel-header">
+                                <span class="ai-badge">ИИ-ассистент</span>
+                            </div>
+                            <div class="ai-actions-row">
+                                <button class="btn btn-ai btn-sm" data-ai-action="generate" title="Написать текст по теме заголовка">Написать текст</button>
+                                <button class="btn btn-ai btn-sm" data-ai-action="improve" title="Улучшить написанный текст">Улучшить</button>
+                                <button class="btn btn-ai btn-sm" data-ai-action="continue" title="Продолжить написанное">Продолжить</button>
+                                <button class="btn btn-ai btn-sm" data-ai-action="shorten" title="Сократить текст">Сократить</button>
+                                <button class="btn btn-ai btn-sm" data-ai-action="title" title="Придумать заголовок по тексту">Заголовок</button>
+                            </div>
+                            <div class="ai-custom-prompt">
+                                <input type="text" id="ai-custom-input" placeholder="Свой запрос к ИИ... (например: добавь список преимуществ)" autocomplete="off">
+                                <button class="btn btn-ai btn-sm" id="ai-custom-send">Отправить</button>
+                            </div>
+                            <div class="ai-status" id="ai-status"></div>
+                        </div>
+
                         <div style="display:flex;gap:12px;margin-top:8px">
                             <button class="btn btn-primary" id="save-post-btn" style="width:auto">Опубликовать</button>
                             <button class="btn btn-ghost" id="cancel-post-btn">Отмена</button>
@@ -266,6 +296,31 @@
                         <button class="btn btn-primary" id="save-password-btn">Сохранить пароль</button>
                         <div class="settings-msg" id="pw-msg"></div>
                     </div>
+                    <div class="settings-card ai-settings-card">
+                        <h3>ИИ-ассистент (нейросеть)</h3>
+                        <p>Подключите OpenAI-совместимый API для генерации и редактирования публикаций прямо в редакторе.</p>
+                        <div class="form-group">
+                            <label>API URL</label>
+                            <input type="text" id="ai-api-url" placeholder="https://api.openai.com/v1/chat/completions" value="https://api.openai.com/v1/chat/completions">
+                            <small class="form-hint">OpenAI, OpenRouter, Groq, Ollama и т.п.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>API Ключ</label>
+                            <input type="password" id="ai-api-key" placeholder="sk-..." autocomplete="off">
+                            <small class="form-hint">Хранится только в вашем браузере (localStorage)</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Модель</label>
+                            <input type="text" id="ai-model" placeholder="gpt-4o-mini" value="gpt-4o-mini">
+                        </div>
+                        <div class="form-group">
+                            <label>Системный промпт (необязательно)</label>
+                            <textarea id="ai-system-prompt" rows="3" placeholder="Ты — копирайтер. Пишешь качественные статьи для блога на русском языке. Используешь HTML-разметку для форматирования."></textarea>
+                        </div>
+                        <button class="btn btn-primary" id="save-ai-settings-btn" style="width:auto">Сохранить настройки ИИ</button>
+                        <div class="settings-msg" id="ai-settings-msg"></div>
+                    </div>
+
                     <div class="settings-card danger">
                         <h3>Сброс контента</h3>
                         <p>Удалить все изменения и вернуть контент к значениям по умолчанию.</p>
@@ -300,6 +355,55 @@
                 <button class="btn btn-primary" id="modal-save-pw">Сохранить</button>
             </div>
             <div class="settings-msg" id="modal-pw-msg"></div>
+        </div>
+    </div>
+
+    <!-- AI Generate Post Modal -->
+    <div class="modal-overlay" id="ai-gen-modal" style="display:none">
+        <div class="modal-card modal-wide">
+            <h3>ИИ: Сгенерировать публикацию</h3>
+            <div class="form-group">
+                <label>Тема публикации</label>
+                <input type="text" id="ai-gen-topic" placeholder="Например: 10 трендов веб-дизайна в 2026 году" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Дополнительные указания (необязательно)</label>
+                <textarea id="ai-gen-instructions" rows="2" placeholder="Стиль, длина, ключевые слова..."></textarea>
+            </div>
+            <div class="ai-status" id="ai-gen-status"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="ai-gen-cancel">Отмена</button>
+                <button class="btn btn-ai" id="ai-gen-submit">Сгенерировать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Auto-Post Modal -->
+    <div class="modal-overlay" id="ai-autopost-modal" style="display:none">
+        <div class="modal-card modal-wide">
+            <h3>ИИ: Авто-постинг</h3>
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:16px">Нейросеть сгенерирует несколько публикаций и опубликует их сразу.</p>
+            <div class="form-group">
+                <label>Общая тема / ниша</label>
+                <input type="text" id="autopost-theme" placeholder="Например: веб-разработка и дизайн" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Количество публикаций</label>
+                <input type="number" id="autopost-count" min="1" max="10" value="3">
+            </div>
+            <div class="form-group">
+                <label>Дополнительные указания (необязательно)</label>
+                <textarea id="autopost-instructions" rows="2" placeholder="Стиль, аудитория, ключевые слова..."></textarea>
+            </div>
+            <div class="ai-status" id="autopost-status"></div>
+            <div class="autopost-progress" id="autopost-progress" style="display:none">
+                <div class="progress-bar"><div class="progress-fill" id="autopost-fill"></div></div>
+                <span class="progress-text" id="autopost-progress-text"></span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="autopost-cancel">Отмена</button>
+                <button class="btn btn-ai" id="autopost-submit">Запустить</button>
+            </div>
         </div>
     </div>
 

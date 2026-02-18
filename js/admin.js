@@ -291,6 +291,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     initPasswordModal();
     initLogout();
     initPostsManager();
+    initAISettings();
+    initAIEditorActions();
+    initAIGeneratePost();
+    initAIAutoPost();
 });
 
 let lockoutTimerInterval = null;
@@ -738,5 +742,391 @@ function initPostToolbar() {
                 document.execCommand(cmd, false, null);
             }
         });
+    });
+}
+
+/* =========================================================
+   AI ASSISTANT
+   ========================================================= */
+
+const AI_SETTINGS_KEY = 'sait_ai_settings';
+
+const DEFAULT_SYSTEM_PROMPT = `Ты — профессиональный копирайтер для блога. Пишешь качественные, интересные статьи на русском языке. Форматируешь текст с помощью HTML-тегов: <h2>, <h3>, <p>, <ul>, <li>, <blockquote>, <strong>, <em>, <a>. Не используй markdown. Не оборачивай ответ в \`\`\`html блоки. Отвечай только HTML-контентом статьи.`;
+
+function getAISettings() {
+    try {
+        return JSON.parse(localStorage.getItem(AI_SETTINGS_KEY)) || {};
+    } catch { return {}; }
+}
+
+function saveAISettings(settings) {
+    localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function initAISettings() {
+    const settings = getAISettings();
+    const urlInput = document.getElementById('ai-api-url');
+    const keyInput = document.getElementById('ai-api-key');
+    const modelInput = document.getElementById('ai-model');
+    const promptInput = document.getElementById('ai-system-prompt');
+    const saveBtn = document.getElementById('save-ai-settings-btn');
+    const msgEl = document.getElementById('ai-settings-msg');
+
+    if (!saveBtn) return;
+
+    if (settings.url) urlInput.value = settings.url;
+    if (settings.key) keyInput.value = settings.key;
+    if (settings.model) modelInput.value = settings.model;
+    if (settings.systemPrompt) promptInput.value = settings.systemPrompt;
+
+    saveBtn.addEventListener('click', () => {
+        const s = {
+            url: urlInput.value.trim(),
+            key: keyInput.value.trim(),
+            model: modelInput.value.trim(),
+            systemPrompt: promptInput.value.trim()
+        };
+        saveAISettings(s);
+        showMsg(msgEl, 'Настройки ИИ сохранены!', 'success');
+    });
+}
+
+function isAIConfigured() {
+    const s = getAISettings();
+    return s.url && s.key;
+}
+
+async function callAI(userPrompt, statusEl) {
+    const settings = getAISettings();
+
+    if (!settings.url || !settings.key) {
+        if (statusEl) setAIStatus(statusEl, 'Настройте API ключ в разделе Настройки → ИИ-ассистент', 'error');
+        return null;
+    }
+
+    if (statusEl) setAIStatus(statusEl, 'Генерация...', 'loading');
+
+    const systemPrompt = settings.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+    const model = settings.model || 'gpt-4o-mini';
+
+    try {
+        const res = await fetch(settings.url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${settings.key}`
+            },
+            body: JSON.stringify({
+                model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 4000
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(`HTTP ${res.status}: ${err.slice(0, 200)}`);
+        }
+
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+
+        if (!content) throw new Error('Пустой ответ от API');
+
+        if (statusEl) setAIStatus(statusEl, 'Готово!', 'success');
+        return content;
+    } catch (e) {
+        if (statusEl) setAIStatus(statusEl, `Ошибка: ${e.message}`, 'error');
+        return null;
+    }
+}
+
+function setAIStatus(el, text, type) {
+    if (!el) return;
+    el.className = 'ai-status ' + type;
+    if (type === 'loading') {
+        el.innerHTML = `<span class="ai-spinner"></span> ${text}`;
+    } else {
+        el.textContent = text;
+    }
+    if (type === 'success') {
+        setTimeout(() => { el.textContent = ''; el.className = 'ai-status'; }, 4000);
+    }
+}
+
+/* ===== AI Actions in Editor ===== */
+function initAIEditorActions() {
+    const panel = document.getElementById('ai-panel');
+    if (!panel) return;
+
+    panel.querySelectorAll('[data-ai-action]').forEach(btn => {
+        btn.addEventListener('click', () => handleAIAction(btn.dataset.aiAction));
+    });
+
+    const customInput = document.getElementById('ai-custom-input');
+    const customSend = document.getElementById('ai-custom-send');
+
+    customSend.addEventListener('click', () => {
+        const prompt = customInput.value.trim();
+        if (prompt) handleAIAction('custom', prompt);
+    });
+
+    customInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const prompt = customInput.value.trim();
+            if (prompt) handleAIAction('custom', prompt);
+        }
+    });
+}
+
+async function handleAIAction(action, customPrompt) {
+    const editor = document.getElementById('post-content-editor');
+    const titleInput = document.getElementById('post-title-input');
+    const statusEl = document.getElementById('ai-status');
+    const currentContent = editor.innerHTML.trim();
+    const title = titleInput.value.trim();
+
+    let prompt;
+
+    switch (action) {
+        case 'generate':
+            if (!title) {
+                titleInput.focus();
+                setAIStatus(statusEl, 'Введите заголовок — ИИ напишет текст по теме', 'error');
+                return;
+            }
+            prompt = `Напиши статью для блога на тему: "${title}". Статья должна быть информативной, около 500-800 слов. Используй подзаголовки h2/h3, параграфы, списки где уместно.`;
+            break;
+
+        case 'improve':
+            if (!currentContent || currentContent === '<br>') {
+                setAIStatus(statusEl, 'Сначала напишите текст для улучшения', 'error');
+                return;
+            }
+            prompt = `Улучши и отредактируй следующий текст статьи. Сделай его более профессиональным, добавь плавные переходы, исправь ошибки. Сохрани HTML-разметку:\n\n${currentContent}`;
+            break;
+
+        case 'continue':
+            if (!currentContent || currentContent === '<br>') {
+                setAIStatus(statusEl, 'Сначала начните писать текст', 'error');
+                return;
+            }
+            prompt = `Продолжи написание следующей статьи. Добавь ещё 2-3 смысловых абзаца в том же стиле. Верни ТОЛЬКО новый текст (продолжение), без повторения уже написанного:\n\n${currentContent}`;
+            break;
+
+        case 'shorten':
+            if (!currentContent || currentContent === '<br>') {
+                setAIStatus(statusEl, 'Нет текста для сокращения', 'error');
+                return;
+            }
+            prompt = `Сократи следующий текст примерно в 2 раза, сохранив ключевые идеи и HTML-разметку:\n\n${currentContent}`;
+            break;
+
+        case 'title':
+            if (!currentContent || currentContent === '<br>') {
+                setAIStatus(statusEl, 'Напишите текст, чтобы ИИ предложил заголовок', 'error');
+                return;
+            }
+            prompt = `Придумай 1 короткий и цепляющий заголовок для следующей статьи. Верни ТОЛЬКО текст заголовка, без кавычек, без HTML:\n\n${currentContent}`;
+            break;
+
+        case 'custom':
+            prompt = `Контекст — текст статьи:\n${currentContent || '(пока пусто)'}\n\nЗапрос от автора: ${customPrompt}\n\nВыполни запрос. Если нужно изменить текст — верни обновлённую версию. Если нужно добавить — верни только новый фрагмент.`;
+            break;
+
+        default:
+            return;
+    }
+
+    setAllAIButtons(true);
+    const result = await callAI(prompt, statusEl);
+    setAllAIButtons(false);
+
+    if (!result) return;
+
+    if (action === 'title') {
+        titleInput.value = result.replace(/<[^>]*>/g, '').trim();
+    } else if (action === 'continue') {
+        editor.innerHTML = currentContent + result;
+    } else if (action === 'custom') {
+        const clean = result.replace(/<[^>]*>/g, '').trim();
+        const isFullArticle = result.includes('<h2') || result.includes('<h3') || result.includes('<p>');
+        if (isFullArticle && result.length > currentContent.length * 0.5) {
+            editor.innerHTML = result;
+        } else {
+            editor.innerHTML = currentContent + result;
+        }
+        document.getElementById('ai-custom-input').value = '';
+    } else {
+        editor.innerHTML = result;
+    }
+}
+
+function setAllAIButtons(disabled) {
+    document.querySelectorAll('.btn-ai').forEach(btn => btn.disabled = disabled);
+}
+
+/* ===== AI: Generate Post from Modal ===== */
+function initAIGeneratePost() {
+    const btn = document.getElementById('ai-generate-post-btn');
+    const modal = document.getElementById('ai-gen-modal');
+    const cancelBtn = document.getElementById('ai-gen-cancel');
+    const submitBtn = document.getElementById('ai-gen-submit');
+
+    if (!btn || !modal) return;
+
+    btn.addEventListener('click', () => {
+        if (!isAIConfigured()) {
+            alert('Сначала настройте API ключ в разделе Настройки → ИИ-ассистент');
+            return;
+        }
+        modal.style.display = 'flex';
+        document.getElementById('ai-gen-topic').value = '';
+        document.getElementById('ai-gen-instructions').value = '';
+        document.getElementById('ai-gen-status').textContent = '';
+        document.getElementById('ai-gen-topic').focus();
+    });
+
+    cancelBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+    submitBtn.addEventListener('click', async () => {
+        const topic = document.getElementById('ai-gen-topic').value.trim();
+        const instructions = document.getElementById('ai-gen-instructions').value.trim();
+        const statusEl = document.getElementById('ai-gen-status');
+
+        if (!topic) {
+            document.getElementById('ai-gen-topic').focus();
+            return;
+        }
+
+        let prompt = `Напиши полноценную статью для блога на тему: "${topic}". Используй HTML-разметку. Статья 600-1000 слов, с подзаголовками, списками, полезной информацией.`;
+        if (instructions) prompt += `\n\nДополнительные требования: ${instructions}`;
+
+        submitBtn.disabled = true;
+        const titlePrompt = `Придумай 1 короткий цепляющий заголовок для статьи на тему "${topic}". Верни ТОЛЬКО текст заголовка, без кавычек, без HTML.`;
+
+        const [content, titleRaw] = await Promise.all([
+            callAI(prompt, statusEl),
+            callAI(titlePrompt, null)
+        ]);
+
+        submitBtn.disabled = false;
+
+        if (!content) return;
+
+        const title = titleRaw ? titleRaw.replace(/<[^>]*>/g, '').trim() : topic;
+
+        const posts = getPosts();
+        posts.push({
+            id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            title,
+            content,
+            date: new Date().toISOString(),
+            updated: null
+        });
+        savePosts(posts);
+        renderAdminPosts();
+        modal.style.display = 'none';
+        setAIStatus(statusEl, '', '');
+    });
+}
+
+/* ===== AI: Auto-Posting ===== */
+function initAIAutoPost() {
+    const btn = document.getElementById('ai-autopost-btn');
+    const modal = document.getElementById('ai-autopost-modal');
+    const cancelBtn = document.getElementById('autopost-cancel');
+    const submitBtn = document.getElementById('autopost-submit');
+
+    if (!btn || !modal) return;
+
+    btn.addEventListener('click', () => {
+        if (!isAIConfigured()) {
+            alert('Сначала настройте API ключ в разделе Настройки → ИИ-ассистент');
+            return;
+        }
+        modal.style.display = 'flex';
+        document.getElementById('autopost-theme').value = '';
+        document.getElementById('autopost-count').value = '3';
+        document.getElementById('autopost-instructions').value = '';
+        document.getElementById('autopost-status').textContent = '';
+        document.getElementById('autopost-progress').style.display = 'none';
+        document.getElementById('autopost-theme').focus();
+    });
+
+    cancelBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+    submitBtn.addEventListener('click', async () => {
+        const theme = document.getElementById('autopost-theme').value.trim();
+        const count = Math.min(10, Math.max(1, parseInt(document.getElementById('autopost-count').value, 10) || 3));
+        const instructions = document.getElementById('autopost-instructions').value.trim();
+        const statusEl = document.getElementById('autopost-status');
+        const progressEl = document.getElementById('autopost-progress');
+        const fillEl = document.getElementById('autopost-fill');
+        const textEl = document.getElementById('autopost-progress-text');
+
+        if (!theme) {
+            document.getElementById('autopost-theme').focus();
+            return;
+        }
+
+        submitBtn.disabled = true;
+        progressEl.style.display = 'block';
+
+        const topicsPrompt = `Придумай ${count} уникальных тем для статей блога в нише "${theme}". ${instructions ? 'Учти: ' + instructions : ''}\n\nВерни ТОЛЬКО список тем, по одной на строку, без нумерации, без пояснений.`;
+
+        setAIStatus(statusEl, 'Генерация тем...', 'loading');
+        const topicsRaw = await callAI(topicsPrompt, null);
+
+        if (!topicsRaw) {
+            setAIStatus(statusEl, 'Не удалось сгенерировать темы', 'error');
+            submitBtn.disabled = false;
+            return;
+        }
+
+        const topics = topicsRaw
+            .replace(/<[^>]*>/g, '')
+            .split('\n')
+            .map(t => t.replace(/^\d+[\.\)]\s*/, '').replace(/^[-•]\s*/, '').trim())
+            .filter(t => t.length > 3)
+            .slice(0, count);
+
+        const posts = getPosts();
+
+        for (let i = 0; i < topics.length; i++) {
+            const topic = topics[i];
+            const pct = Math.round(((i) / topics.length) * 100);
+            fillEl.style.width = pct + '%';
+            textEl.textContent = `Публикация ${i + 1} из ${topics.length}: ${topic}`;
+            setAIStatus(statusEl, `Пишу статью ${i + 1}/${topics.length}...`, 'loading');
+
+            const articlePrompt = `Напиши статью для блога: "${topic}". HTML-разметка, 400-700 слов, подзаголовки, списки. ${instructions ? 'Стиль: ' + instructions : ''}`;
+            const content = await callAI(articlePrompt, null);
+
+            if (content) {
+                posts.push({
+                    id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                    title: topic,
+                    content,
+                    date: new Date(Date.now() - (topics.length - i) * 60000).toISOString(),
+                    updated: null
+                });
+                savePosts(posts);
+            }
+        }
+
+        fillEl.style.width = '100%';
+        textEl.textContent = `Готово! Создано ${topics.length} публикаций`;
+        setAIStatus(statusEl, 'Авто-постинг завершён!', 'success');
+        submitBtn.disabled = false;
+        renderAdminPosts();
+
+        setTimeout(() => { modal.style.display = 'none'; }, 2000);
     });
 }
