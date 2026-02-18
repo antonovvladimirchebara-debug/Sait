@@ -246,10 +246,6 @@ textarea { resize: vertical; min-height: 80px; }
     transition: transform 0.25s ease;
 }
 
-.admin-sidebar.collapsed .sidebar-toggle svg {
-    transform: rotate(-90deg);
-}
-
 .admin-sidebar {
     width: 240px;
     background: var(--bg-2);
@@ -533,12 +529,7 @@ textarea { resize: vertical; min-height: 80px; }
         width: 100%;
         border-right: none;
         border-bottom: 1px solid var(--border);
-        padding: 8px 0;
-        max-height: none;
-    }
-
-    .admin-sidebar.collapsed .sidebar-nav {
-        display: none;
+        padding: 0;
     }
 
     .sidebar-toggle {
@@ -546,12 +537,29 @@ textarea { resize: vertical; min-height: 80px; }
     }
 
     .sidebar-nav {
+        display: none;
         flex-direction: column;
         gap: 4px;
-        padding: 0 10px 8px;
+        padding: 4px 10px 12px;
     }
 
-    .admin-content { padding: 24px 16px 120px; }
+    .admin-sidebar.expanded .sidebar-nav {
+        display: flex;
+    }
+
+    .sidebar-toggle svg {
+        transform: rotate(-90deg);
+        transition: transform 0.2s;
+    }
+
+    .admin-sidebar.expanded .sidebar-toggle svg {
+        transform: rotate(0deg);
+    }
+
+    .admin-content {
+        display: block !important;
+        padding: 20px 16px 120px;
+    }
 
     .editor-actions {
         left: 0;

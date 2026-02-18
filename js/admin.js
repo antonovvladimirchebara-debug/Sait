@@ -397,13 +397,13 @@ function initSidebar() {
     const sidebar = document.getElementById('admin-sidebar');
     if (sidebarToggle && sidebar) {
         sidebarToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
+            sidebar.classList.toggle('expanded');
         });
 
         links.forEach(link => {
             link.addEventListener('click', () => {
                 if (window.innerWidth <= 768) {
-                    sidebar.classList.add('collapsed');
+                    sidebar.classList.remove('expanded');
                 }
             });
         });
