@@ -833,7 +833,7 @@ function initAISettings() {
         const defaults = {
             url: atob('aHR0cHM6Ly9hcGkub3BlbmFpLmNvbS92MS9jaGF0L2NvbXBsZXRpb25z'),
             key: atob('c2stcHJvai1zOWRqNzI5SFhpSkhKMnV3UEdGR2NYNjY3a3FaOFlRSjdtdXNvYjFsVElhZjN6WEpmNGJxRDlwaXVmVTludDRWanI0YmdiZWN6T1QzQmxiRkpIWkd1QWdhSTBzTjVCTmxsTjI4cm53YkVCMzljRkFYc2tKYWJNZUxVV0ZndmFBa3I2V2o4WTBlVEVHWUtUZkVWa0NrRXJ5MnNB'),
-            model: 'gpt-4.1-mini',
+            model: 'gpt-5.2',
             systemPrompt: ''
         };
         saveAISettings(defaults);
@@ -875,7 +875,7 @@ async function callAI(userPrompt, statusEl) {
     if (statusEl) setAIStatus(statusEl, 'Генерация...', 'loading');
 
     const systemPrompt = settings.systemPrompt || DEFAULT_SYSTEM_PROMPT;
-    const model = settings.model || 'gpt-4.1-mini';
+    const model = settings.model || 'gpt-5.2';
 
     try {
         const res = await fetch(settings.url, {
