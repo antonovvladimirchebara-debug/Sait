@@ -392,6 +392,22 @@ function initSidebar() {
             btn.closest('.tree-group').classList.toggle('open');
         });
     });
+
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('admin-sidebar');
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.add('collapsed');
+                }
+            });
+        });
+    }
 }
 
 function loadContentToForm() {
