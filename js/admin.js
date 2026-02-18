@@ -1,7 +1,12 @@
 const STORAGE_KEY = 'sait_content';
 const PW_KEY = 'sait_admin_pw';
 const SESSION_KEY = 'sait_admin_session';
-const DEFAULT_PW = 'admin';
+const LOCKOUT_KEY = 'sait_lockout';
+const LOCKOUT_DB_KEY = 'sait_lockout_db';
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000;
+
+const DEFAULT_PW_HASH = '41b472af8ea6180a35e4c2eda03587b54c927658e0b2d5207e3d1406941532ae';
 
 const DEFAULT_CONTENT = {
     hero: {
@@ -51,26 +56,161 @@ const DEFAULT_CONTENT = {
     }
 };
 
-function hashString(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return 'h_' + Math.abs(hash).toString(36);
+async function sha256(str) {
+    const buf = new TextEncoder().encode(str);
+    const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function getPasswordHash() {
-    return localStorage.getItem(PW_KEY) || hashString(DEFAULT_PW);
+    return localStorage.getItem(PW_KEY) || DEFAULT_PW_HASH;
 }
 
-function checkPassword(pw) {
-    return hashString(pw) === getPasswordHash();
+async function checkPassword(pw) {
+    const hash = await sha256(pw);
+    return hash === getPasswordHash();
 }
 
-function setPassword(newPw) {
-    localStorage.setItem(PW_KEY, hashString(newPw));
+async function setPassword(newPw) {
+    const hash = await sha256(newPw);
+    localStorage.setItem(PW_KEY, hash);
+}
+
+/* ===== Browser Fingerprint ===== */
+function getBrowserFingerprint() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillText('fp', 2, 2);
+    const canvasData = canvas.toDataURL();
+
+    const components = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width + 'x' + screen.height,
+        screen.colorDepth,
+        new Date().getTimezoneOffset(),
+        navigator.hardwareConcurrency || 'unknown',
+        navigator.platform || 'unknown',
+        canvasData.slice(-50)
+    ];
+    let hash = 0;
+    const str = components.join('|');
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash = hash & hash;
+    }
+    return 'fp_' + Math.abs(hash).toString(36);
+}
+
+/* ===== Brute-Force Protection ===== */
+let cachedIP = null;
+
+async function getClientIP() {
+    if (cachedIP) return cachedIP;
+    try {
+        const res = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(3000) });
+        const data = await res.json();
+        cachedIP = data.ip;
+        return cachedIP;
+    } catch {
+        return 'unknown';
+    }
+}
+
+function getLockoutDB() {
+    try {
+        return JSON.parse(localStorage.getItem(LOCKOUT_DB_KEY)) || {};
+    } catch { return {}; }
+}
+
+function saveLockoutDB(db) {
+    localStorage.setItem(LOCKOUT_DB_KEY, JSON.stringify(db));
+}
+
+function getLockoutEntry(fingerprint) {
+    const db = getLockoutDB();
+    return db[fingerprint] || null;
+}
+
+function setLockoutEntry(fingerprint, entry) {
+    const db = getLockoutDB();
+    db[fingerprint] = entry;
+    saveLockoutDB(db);
+}
+
+function getSessionLockout() {
+    try {
+        return JSON.parse(sessionStorage.getItem(LOCKOUT_KEY)) || { attempts: 0, lockedUntil: 0 };
+    } catch { return { attempts: 0, lockedUntil: 0 }; }
+}
+
+function setSessionLockout(data) {
+    sessionStorage.setItem(LOCKOUT_KEY, JSON.stringify(data));
+}
+
+async function isLocked() {
+    const now = Date.now();
+
+    const session = getSessionLockout();
+    if (session.lockedUntil > now) return session.lockedUntil;
+
+    const fp = getBrowserFingerprint();
+    const fpEntry = getLockoutEntry(fp);
+    if (fpEntry && fpEntry.lockedUntil > now) return fpEntry.lockedUntil;
+
+    const ip = await getClientIP();
+    if (ip !== 'unknown') {
+        const ipEntry = getLockoutEntry('ip_' + ip);
+        if (ipEntry && ipEntry.lockedUntil > now) return ipEntry.lockedUntil;
+    }
+
+    return false;
+}
+
+async function registerFailedAttempt() {
+    const now = Date.now();
+    const fp = getBrowserFingerprint();
+    const ip = await getClientIP();
+
+    const session = getSessionLockout();
+    session.attempts = (session.attempts || 0) + 1;
+    if (session.attempts >= MAX_ATTEMPTS) {
+        session.lockedUntil = now + LOCKOUT_DURATION_MS;
+    }
+    setSessionLockout(session);
+
+    const fpEntry = getLockoutEntry(fp) || { attempts: 0, lockedUntil: 0 };
+    fpEntry.attempts = (fpEntry.attempts || 0) + 1;
+    if (fpEntry.attempts >= MAX_ATTEMPTS) {
+        fpEntry.lockedUntil = now + LOCKOUT_DURATION_MS;
+    }
+    setLockoutEntry(fp, fpEntry);
+
+    if (ip !== 'unknown') {
+        const ipEntry = getLockoutEntry('ip_' + ip) || { attempts: 0, lockedUntil: 0 };
+        ipEntry.attempts = (ipEntry.attempts || 0) + 1;
+        if (ipEntry.attempts >= MAX_ATTEMPTS) {
+            ipEntry.lockedUntil = now + LOCKOUT_DURATION_MS;
+        }
+        setLockoutEntry('ip_' + ip, ipEntry);
+    }
+
+    return session.attempts;
+}
+
+function resetLockout() {
+    const fp = getBrowserFingerprint();
+    setSessionLockout({ attempts: 0, lockedUntil: 0 });
+    setLockoutEntry(fp, { attempts: 0, lockedUntil: 0 });
+}
+
+function formatTimeLeft(ms) {
+    const totalSec = Math.ceil(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${min}:${String(sec).padStart(2, '0')}`;
 }
 
 function getSavedContent() {
@@ -137,10 +277,12 @@ function stripHtml(html) {
 }
 
 /* ===== Init ===== */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const isLoggedIn = sessionStorage.getItem(SESSION_KEY) === 'true';
     if (isLoggedIn) {
         showAdmin();
+    } else {
+        await checkAndShowLockout();
     }
     initLogin();
     initSidebar();
@@ -151,20 +293,79 @@ document.addEventListener('DOMContentLoaded', () => {
     initPostsManager();
 });
 
+let lockoutTimerInterval = null;
+
+async function checkAndShowLockout() {
+    const lockedUntil = await isLocked();
+    if (lockedUntil) {
+        showLockoutScreen(lockedUntil);
+        return true;
+    }
+    return false;
+}
+
+function showLockoutScreen(lockedUntil) {
+    const form = document.getElementById('login-form');
+    const errorEl = document.getElementById('login-error');
+    const pwInput = document.getElementById('password');
+    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (pwInput) pwInput.disabled = true;
+
+    function updateTimer() {
+        const remaining = lockedUntil - Date.now();
+        if (remaining <= 0) {
+            clearInterval(lockoutTimerInterval);
+            errorEl.innerHTML = '';
+            errorEl.classList.remove('show');
+            if (submitBtn) submitBtn.disabled = false;
+            if (pwInput) { pwInput.disabled = false; pwInput.focus(); }
+            return;
+        }
+        errorEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="vertical-align:middle;margin-right:4px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Вход заблокирован. Повторите через <strong>${formatTimeLeft(remaining)}</strong>`;
+        errorEl.classList.add('show');
+    }
+
+    updateTimer();
+    if (lockoutTimerInterval) clearInterval(lockoutTimerInterval);
+    lockoutTimerInterval = setInterval(updateTimer, 1000);
+}
+
 function initLogin() {
     const form = document.getElementById('login-form');
     const errorEl = document.getElementById('login-error');
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const pw = document.getElementById('password').value;
 
-        if (checkPassword(pw)) {
+        const lockedUntil = await isLocked();
+        if (lockedUntil) {
+            showLockoutScreen(lockedUntil);
+            return;
+        }
+
+        const pw = document.getElementById('password').value;
+        const valid = await checkPassword(pw);
+
+        if (valid) {
+            resetLockout();
             sessionStorage.setItem(SESSION_KEY, 'true');
             errorEl.classList.remove('show');
             showAdmin();
         } else {
-            errorEl.classList.add('show');
+            const attempts = await registerFailedAttempt();
+            const remaining = MAX_ATTEMPTS - attempts;
+
+            if (remaining <= 0) {
+                const lockedUntilNew = await isLocked();
+                showLockoutScreen(lockedUntilNew);
+            } else {
+                errorEl.innerHTML = `Неверный пароль. Осталось попыток: <strong>${remaining}</strong>`;
+                errorEl.classList.add('show');
+            }
+
+            document.getElementById('password').value = '';
             document.getElementById('password').focus();
         }
     });
@@ -281,24 +482,25 @@ function initSettings() {
     const msgEl = document.getElementById('pw-msg');
 
     if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
             const current = document.getElementById('settings-current-pw').value;
             const newPw = document.getElementById('settings-new-pw').value;
-            const confirm = document.getElementById('settings-confirm-pw').value;
+            const confirmPw = document.getElementById('settings-confirm-pw').value;
 
-            if (!checkPassword(current)) {
+            const valid = await checkPassword(current);
+            if (!valid) {
                 showMsg(msgEl, 'Неверный текущий пароль', 'error');
                 return;
             }
-            if (newPw.length < 3) {
-                showMsg(msgEl, 'Пароль слишком короткий (минимум 3 символа)', 'error');
+            if (newPw.length < 6) {
+                showMsg(msgEl, 'Пароль слишком короткий (минимум 6 символов)', 'error');
                 return;
             }
-            if (newPw !== confirm) {
+            if (newPw !== confirmPw) {
                 showMsg(msgEl, 'Пароли не совпадают', 'error');
                 return;
             }
-            setPassword(newPw);
+            await setPassword(newPw);
             showMsg(msgEl, 'Пароль изменён!', 'success');
             document.getElementById('settings-current-pw').value = '';
             document.getElementById('settings-new-pw').value = '';
@@ -335,19 +537,20 @@ function initPasswordModal() {
         if (e.target === modal) modal.style.display = 'none';
     });
 
-    saveBtn.addEventListener('click', () => {
+    saveBtn.addEventListener('click', async () => {
         const current = document.getElementById('modal-current-pw').value;
         const newPw = document.getElementById('modal-new-pw').value;
 
-        if (!checkPassword(current)) {
+        const valid = await checkPassword(current);
+        if (!valid) {
             showMsg(msgEl, 'Неверный текущий пароль', 'error');
             return;
         }
-        if (newPw.length < 3) {
-            showMsg(msgEl, 'Минимум 3 символа', 'error');
+        if (newPw.length < 6) {
+            showMsg(msgEl, 'Минимум 6 символов', 'error');
             return;
         }
-        setPassword(newPw);
+        await setPassword(newPw);
         showMsg(msgEl, 'Пароль изменён!', 'success');
         setTimeout(() => { modal.style.display = 'none'; }, 1500);
     });

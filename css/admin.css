@@ -64,17 +64,8 @@ body {
     margin-bottom: 8px;
 }
 
-.login-hint {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    margin-bottom: 28px;
-}
-
-.login-hint code {
-    background: var(--bg-4);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.85rem;
+.login-card h2 {
+    margin-bottom: 24px;
 }
 
 .login-error {
@@ -82,9 +73,28 @@ body {
     font-size: 0.85rem;
     margin-bottom: 12px;
     display: none;
+    padding: 10px 14px;
+    background: rgba(255,107,107,0.08);
+    border: 1px solid rgba(255,107,107,0.15);
+    border-radius: 8px;
+    line-height: 1.5;
 }
 
 .login-error.show { display: block; }
+
+.login-error strong {
+    font-weight: 700;
+}
+
+.login-error svg {
+    vertical-align: middle;
+}
+
+input:disabled, button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 
 /* ===== Inputs & Buttons ===== */
 .input-group,

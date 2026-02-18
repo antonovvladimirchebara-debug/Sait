@@ -16,13 +16,12 @@
         <div class="login-card">
             <div class="login-logo">Sait<span>.</span></div>
             <h2>Вход в админ-панель</h2>
-            <p class="login-hint">Пароль по умолчанию: <code>admin</code></p>
             <form id="login-form">
                 <div class="input-group">
                     <label for="password">Пароль</label>
-                    <input type="password" id="password" placeholder="Введите пароль" autofocus>
+                    <input type="password" id="password" placeholder="Введите пароль" autofocus autocomplete="off">
                 </div>
-                <div class="login-error" id="login-error">Неверный пароль</div>
+                <div class="login-error" id="login-error"></div>
                 <button type="submit" class="btn btn-primary">Войти</button>
             </form>
         </div>
