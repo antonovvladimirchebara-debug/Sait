@@ -17,18 +17,6 @@ const DEFAULT_CONTENT = {
         btn1: 'Читать блог',
         btn2: 'Обо мне'
     },
-    features: {
-        title: 'Что мы предлагаем',
-        description: 'Комплексные решения для вашего бизнеса — от идеи до реализации',
-        items: [
-            { title: 'Веб-разработка', text: 'Современные адаптивные сайты с быстрой загрузкой и отличным пользовательским опытом' },
-            { title: 'UI/UX Дизайн', text: 'Интуитивно понятные интерфейсы, которые нравятся пользователям и увеличивают конверсию' },
-            { title: 'Чистый код', text: 'Структурированный, документированный и легко поддерживаемый код для долгосрочного развития' },
-            { title: 'Безопасность', text: 'Защита данных и надёжная инфраструктура для безопасной работы вашего проекта' },
-            { title: 'Быстрая доставка', text: 'Гибкая методология разработки для быстрого достижения результатов без потери качества' },
-            { title: 'Масштабируемость', text: 'Архитектура, готовая к росту — ваш проект будет развиваться вместе с бизнесом' }
-        ]
-    },
     about: {
         title: 'Мы создаём продукты, которыми гордимся',
         text1: 'Наша команда объединяет талантливых разработчиков, дизайнеров и стратегов. Мы верим, что отличный продукт — это сочетание технического совершенства и глубокого понимания потребностей пользователей.',
@@ -420,30 +408,6 @@ function loadContentToForm() {
         }
     });
 
-    renderFeaturesEditor(content.features.items);
-}
-
-function renderFeaturesEditor(items) {
-    const container = document.getElementById('features-list');
-    if (!container) return;
-    container.innerHTML = '';
-
-    items.forEach((item, i) => {
-        const card = document.createElement('div');
-        card.className = 'feature-edit-card';
-        card.innerHTML = `
-            <h4>Карточка ${i + 1}</h4>
-            <div class="form-group">
-                <label>Заголовок</label>
-                <input type="text" data-feature="${i}" data-prop="title" value="${escapeHtml(item.title)}">
-            </div>
-            <div class="form-group">
-                <label>Описание</label>
-                <textarea data-feature="${i}" data-prop="text" rows="2">${escapeHtml(item.text)}</textarea>
-            </div>
-        `;
-        container.appendChild(card);
-    });
 }
 
 function escapeHtml(str) {
@@ -466,14 +430,6 @@ function collectFormData() {
         const val = input.value.trim();
         if (val) {
             obj[lastKey] = input.type === 'number' ? parseInt(val, 10) : val;
-        }
-    });
-
-    document.querySelectorAll('[data-feature]').forEach(input => {
-        const idx = parseInt(input.dataset.feature, 10);
-        const prop = input.dataset.prop;
-        if (content.features.items[idx]) {
-            content.features.items[idx][prop] = input.value.trim();
         }
     });
 

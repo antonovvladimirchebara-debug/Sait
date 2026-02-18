@@ -38,26 +38,6 @@ function applyCustomContent() {
         if (h.btn2) setText('.hero-actions .btn-secondary', h.btn2);
     }
 
-    if (content.features) {
-        const f = content.features;
-        const header = document.querySelector('#features .section-header');
-        if (header) {
-            setText('#features .section-title', f.title);
-            setText('#features .section-description', f.description);
-        }
-        if (f.items) {
-            const cards = document.querySelectorAll('.feature-card');
-            f.items.forEach((item, i) => {
-                if (cards[i]) {
-                    const h3 = cards[i].querySelector('h3');
-                    const p = cards[i].querySelector('p');
-                    if (h3 && item.title) h3.textContent = item.title;
-                    if (p && item.text) p.textContent = item.text;
-                }
-            });
-        }
-    }
-
     if (content.about) {
         const a = content.about;
         setText('#about .section-title', a.title);
