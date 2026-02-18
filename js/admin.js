@@ -103,6 +103,39 @@ function saveContent(data) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
+const POSTS_KEY = 'sait_posts';
+const COMMENTS_KEY = 'sait_comments';
+
+function getPosts() {
+    try { return JSON.parse(localStorage.getItem(POSTS_KEY)) || []; }
+    catch { return []; }
+}
+
+function savePosts(posts) {
+    localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
+}
+
+function getAllComments() {
+    try { return JSON.parse(localStorage.getItem(COMMENTS_KEY)) || {}; }
+    catch { return {}; }
+}
+
+function saveAllComments(all) {
+    localStorage.setItem(COMMENTS_KEY, JSON.stringify(all));
+}
+
+function formatDate(iso) {
+    const d = new Date(iso);
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function stripHtml(html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || '';
+}
+
 /* ===== Init ===== */
 document.addEventListener('DOMContentLoaded', () => {
     const isLoggedIn = sessionStorage.getItem(SESSION_KEY) === 'true';
@@ -115,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSettings();
     initPasswordModal();
     initLogout();
+    initPostsManager();
 });
 
 function initLogin() {
@@ -333,4 +367,173 @@ function showMsg(el, text, type) {
     el.textContent = text;
     el.className = 'settings-msg ' + type;
     setTimeout(() => { el.textContent = ''; el.className = 'settings-msg'; }, 4000);
+}
+
+/* ===== Posts Manager ===== */
+let editingPostId = null;
+
+function initPostsManager() {
+    const newBtn = document.getElementById('new-post-btn');
+    const backBtn = document.getElementById('back-to-posts-btn');
+    const saveBtn = document.getElementById('save-post-btn');
+    const cancelBtn = document.getElementById('cancel-post-btn');
+
+    if (!newBtn) return;
+
+    newBtn.addEventListener('click', () => openPostEditor(null));
+    backBtn.addEventListener('click', closePostEditor);
+    cancelBtn.addEventListener('click', closePostEditor);
+
+    saveBtn.addEventListener('click', () => {
+        const title = document.getElementById('post-title-input').value.trim();
+        const content = document.getElementById('post-content-editor').innerHTML.trim();
+
+        if (!title) {
+            const input = document.getElementById('post-title-input');
+            input.style.borderColor = '#ff6b6b';
+            input.style.boxShadow = '0 0 0 3px rgba(255,107,107,0.2)';
+            input.focus();
+            setTimeout(() => { input.style.borderColor = ''; input.style.boxShadow = ''; }, 2000);
+            return;
+        }
+        if (!content || content === '<br>') {
+            document.getElementById('post-content-editor').focus();
+            return;
+        }
+
+        const posts = getPosts();
+
+        if (editingPostId) {
+            const idx = posts.findIndex(p => p.id === editingPostId);
+            if (idx !== -1) {
+                posts[idx].title = title;
+                posts[idx].content = content;
+                posts[idx].updated = new Date().toISOString();
+            }
+        } else {
+            posts.push({
+                id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                title,
+                content,
+                date: new Date().toISOString(),
+                updated: null
+            });
+        }
+
+        savePosts(posts);
+        closePostEditor();
+        renderAdminPosts();
+    });
+
+    initPostToolbar();
+    renderAdminPosts();
+}
+
+function openPostEditor(postId) {
+    editingPostId = postId;
+    const titleInput = document.getElementById('post-title-input');
+    const contentEditor = document.getElementById('post-content-editor');
+
+    if (postId) {
+        const post = getPosts().find(p => p.id === postId);
+        if (post) {
+            titleInput.value = post.title;
+            contentEditor.innerHTML = post.content;
+        }
+    } else {
+        titleInput.value = '';
+        contentEditor.innerHTML = '';
+    }
+
+    document.getElementById('posts-manager').style.display = 'none';
+    document.getElementById('post-editor-panel').style.display = 'block';
+    titleInput.focus();
+}
+
+function closePostEditor() {
+    editingPostId = null;
+    document.getElementById('posts-manager').style.display = '';
+    document.getElementById('post-editor-panel').style.display = 'none';
+}
+
+function renderAdminPosts() {
+    const container = document.getElementById('admin-posts-list');
+    if (!container) return;
+
+    const posts = getPosts().sort((a, b) => new Date(b.date) - new Date(a.date));
+    const allComments = getAllComments();
+
+    if (posts.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);padding:20px 0">Публикаций пока нет. Нажмите «Новая публикация», чтобы создать первую.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    posts.forEach(post => {
+        const commentCount = (allComments[post.id] || []).length;
+        const excerpt = stripHtml(post.content).slice(0, 120);
+        const card = document.createElement('div');
+        card.className = 'admin-post-card';
+        card.innerHTML = `
+            <div class="admin-post-info">
+                <h3>${escapeHtml(post.title)}</h3>
+                <p class="admin-post-excerpt">${excerpt}${excerpt.length >= 120 ? '...' : ''}</p>
+                <div class="admin-post-meta">
+                    <span>${formatDate(post.date)}</span>
+                    ${post.updated ? `<span> · обновлено ${formatDate(post.updated)}</span>` : ''}
+                    <span> · ${commentCount} комм.</span>
+                </div>
+            </div>
+            <div class="admin-post-actions">
+                <button class="btn btn-ghost btn-sm edit-post-btn" data-id="${post.id}">Редактировать</button>
+                <button class="btn btn-ghost btn-sm btn-danger-text delete-post-btn" data-id="${post.id}">Удалить</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+
+    container.querySelectorAll('.edit-post-btn').forEach(btn => {
+        btn.addEventListener('click', () => openPostEditor(btn.dataset.id));
+    });
+
+    container.querySelectorAll('.delete-post-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!confirm('Удалить публикацию? Комментарии тоже будут удалены.')) return;
+            const id = btn.dataset.id;
+            let posts = getPosts();
+            posts = posts.filter(p => p.id !== id);
+            savePosts(posts);
+
+            const allC = getAllComments();
+            delete allC[id];
+            saveAllComments(allC);
+
+            renderAdminPosts();
+        });
+    });
+}
+
+function initPostToolbar() {
+    const toolbar = document.getElementById('post-toolbar');
+    const editor = document.getElementById('post-content-editor');
+    if (!toolbar || !editor) return;
+
+    toolbar.querySelectorAll('button[data-cmd]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            editor.focus();
+            const cmd = btn.dataset.cmd;
+            const value = btn.dataset.value || null;
+
+            if (cmd === 'createLink') {
+                const url = prompt('Введите URL:', 'https://');
+                if (url) document.execCommand(cmd, false, url);
+            } else if (cmd === 'formatBlock') {
+                document.execCommand(cmd, false, value);
+            } else {
+                document.execCommand(cmd, false, null);
+            }
+        });
+    });
 }

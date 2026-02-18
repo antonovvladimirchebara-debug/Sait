@@ -445,3 +445,153 @@ textarea { resize: vertical; min-height: 80px; }
         grid-column: 1 / -1;
     }
 }
+
+/* ===== Admin Post Cards ===== */
+.admin-post-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+}
+
+.admin-post-card:hover {
+    border-color: var(--border-hover);
+}
+
+.admin-post-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-post-info h3 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-post-excerpt {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-post-meta {
+    font-size: 0.78rem;
+    color: var(--text-subtle);
+}
+
+.admin-post-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-sm {
+    padding: 6px 14px !important;
+    font-size: 0.8rem !important;
+}
+
+.btn-danger-text {
+    color: #ff6b6b !important;
+}
+
+.btn-danger-text:hover {
+    background: rgba(255,107,107,0.1) !important;
+}
+
+/* Admin rich editor overrides */
+.admin-post-editor .rich-editor {
+    min-height: 300px;
+    max-height: 600px;
+}
+
+.admin-post-editor .editor-toolbar {
+    gap: 3px;
+    padding: 8px 10px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+}
+
+.admin-post-editor .editor-toolbar button {
+    width: 34px;
+    height: 32px;
+    font-size: 0.88rem;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.admin-post-editor .editor-toolbar button:hover {
+    background: var(--bg-4);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.admin-post-editor .rich-editor {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+    padding: 16px 18px;
+    color: var(--text);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    outline: none;
+}
+
+.admin-post-editor .rich-editor:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(108,92,231,0.15);
+}
+
+.admin-post-editor .rich-editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-subtle);
+    pointer-events: none;
+}
+
+.admin-post-editor .rich-editor h2 { font-size: 1.4rem; margin: 16px 0 8px; }
+.admin-post-editor .rich-editor h3 { font-size: 1.15rem; margin: 12px 0 6px; }
+.admin-post-editor .rich-editor p { margin-bottom: 10px; }
+.admin-post-editor .rich-editor blockquote {
+    border-left: 3px solid var(--primary);
+    padding: 8px 16px;
+    margin: 10px 0;
+    background: rgba(108,92,231,0.05);
+    border-radius: 0 6px 6px 0;
+}
+
+.admin-post-editor .toolbar-sep {
+    width: 1px;
+    background: var(--border);
+    margin: 4px 6px;
+}
+
+@media (max-width: 768px) {
+    .admin-post-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-post-actions {
+        justify-content: flex-end;
+    }
+}

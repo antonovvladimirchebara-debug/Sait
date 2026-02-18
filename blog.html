@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блог — Sait</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/blog.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header scrolled" id="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="index.html" class="logo">Sait<span class="logo-dot">.</span></a>
+                <button class="mobile-toggle" id="mobile-toggle" aria-label="Меню">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <ul class="nav-links" id="nav-links">
+                    <li><a href="index.html">Главная</a></li>
+                    <li><a href="blog.html" class="active">Блог</a></li>
+                    <li><a href="index.html#features">Возможности</a></li>
+                    <li><a href="index.html#about">О нас</a></li>
+                    <li><a href="index.html#contact">Контакты</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Blog list view -->
+    <section class="blog-section" id="blog-list">
+        <div class="container">
+            <div class="blog-header">
+                <h1>Блог</h1>
+                <p>Публикации, новости и полезные материалы</p>
+            </div>
+            <div class="posts-grid" id="posts-grid">
+                <!-- Posts rendered by JS -->
+            </div>
+            <div class="empty-state" id="empty-state" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <h3>Пока нет публикаций</h3>
+                <p>Публикации появятся здесь, как только админ добавит их через панель управления.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Single post view -->
+    <section class="post-section" id="post-view" style="display:none">
+        <div class="container">
+            <a href="blog.html" class="back-link" id="back-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Назад к блогу
+            </a>
+
+            <article class="post-article" id="post-article">
+                <div class="post-meta" id="post-meta"></div>
+                <h1 class="post-title" id="post-title"></h1>
+                <div class="post-body" id="post-body"></div>
+            </article>
+
+            <div class="comments-section" id="comments-section">
+                <h2 class="comments-heading">
+                    Комментарии <span class="comments-count" id="comments-count"></span>
+                </h2>
+
+                <div class="comment-form-wrapper" id="comment-form-wrapper">
+                    <h3>Оставить комментарий</h3>
+                    <div class="form-group">
+                        <label for="comment-author">Имя</label>
+                        <input type="text" id="comment-author" placeholder="Ваше имя" maxlength="60">
+                    </div>
+                    <div class="form-group">
+                        <label>Комментарий</label>
+                        <div class="editor-toolbar comment-toolbar">
+                            <button type="button" data-cmd="bold" title="Жирный"><b>B</b></button>
+                            <button type="button" data-cmd="italic" title="Курсив"><i>I</i></button>
+                            <button type="button" data-cmd="underline" title="Подчёркнутый"><u>U</u></button>
+                            <span class="toolbar-sep"></span>
+                            <button type="button" data-cmd="insertUnorderedList" title="Список">&#8226;</button>
+                            <button type="button" data-cmd="createLink" title="Ссылка">&#128279;</button>
+                        </div>
+                        <div class="rich-editor comment-editor" id="comment-editor" contenteditable="true" data-placeholder="Напишите ваш комментарий..."></div>
+                    </div>
+                    <button class="btn btn-primary" id="submit-comment">Отправить</button>
+                </div>
+
+                <div class="comments-list" id="comments-list">
+                    <!-- Comments rendered by JS -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <a href="index.html" class="logo">Sait<span class="logo-dot">.</span></a>
+                    <p>Создаём цифровое будущее вместе с вами.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h4>Навигация</h4>
+                        <a href="index.html">Главная</a>
+                        <a href="blog.html">Блог</a>
+                        <a href="index.html#about">О нас</a>
+                        <a href="index.html#contact">Контакты</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Sait. Все права защищены. &nbsp;|&nbsp; <a href="admin.html" style="color:#6c5ce7">Админ-панель</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Edit comment modal -->
+    <div class="modal-overlay" id="edit-comment-modal" style="display:none">
+        <div class="modal-card modal-wide">
+            <h3>Редактировать комментарий</h3>
+            <div class="form-group">
+                <div class="editor-toolbar comment-toolbar" id="edit-comment-toolbar">
+                    <button type="button" data-cmd="bold" title="Жирный"><b>B</b></button>
+                    <button type="button" data-cmd="italic" title="Курсив"><i>I</i></button>
+                    <button type="button" data-cmd="underline" title="Подчёркнутый"><u>U</u></button>
+                    <span class="toolbar-sep"></span>
+                    <button type="button" data-cmd="insertUnorderedList" title="Список">&#8226;</button>
+                    <button type="button" data-cmd="createLink" title="Ссылка">&#128279;</button>
+                </div>
+                <div class="rich-editor comment-editor" id="edit-comment-editor" contenteditable="true"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="edit-comment-cancel">Отмена</button>
+                <button class="btn btn-primary" id="edit-comment-save">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/blog.js"></script>
+</body>
+</html>
