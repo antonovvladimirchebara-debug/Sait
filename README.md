@@ -24,7 +24,11 @@
 - SVG-иконки без внешних зависимостей
 - Google Fonts (Inter)
 
-## Запуск
+## Демо
+
+Сайт доступен онлайн: [https://antonovvladimirchebara-debug.github.io/Sait/](https://antonovvladimirchebara-debug.github.io/Sait/)
+
+## Запуск локально
 
 Откройте `index.html` в браузере — дополнительные зависимости не требуются.
 
